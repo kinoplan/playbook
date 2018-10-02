@@ -1,2 +1,3 @@
-# scala-style-guide
-TK Scala Syle Guide
+# Kinoplan Playbook
+
+- [Code review](https://kinoplan.github.io/playbook/code-review/)
