@@ -77,6 +77,7 @@
 	* [Scaladoc](#scaladoc)
 10. [Git](#git)
 11. [Разное](#miscellaneous)
+    * [Настройка кодстайла в проекте](#set_up_code_style_in_a_project)
     * [Архитектура](#architecture)
     * [Технический долг](#tech_debt)
     * [Не изобретай колесо](#not_reinventing_the_wheel)
@@ -237,7 +238,9 @@
 * Отступы для Play Json комбинаторов и им подобным.
 
   ```scala
-  // плохо, хотя IDE может так форматировать
+  // хорошо, 
+  // так как существующие форматеры(scalafmt, IDEA xml)
+  // не могут обработать такой кейс
   val onlyRuEnReads: Reads[Title] = (
     (__ \ "ru").readWithDefault("") and
     (__ \ "en").readWithDefault("")
@@ -466,57 +469,89 @@
 * Используйте круглые скобки в функциях без параметров **во всех случаях** (в том числе и для чистых функций).
   
 ### <a name='figure_brackets'>Фигурные скобки</a>
-* Ставьте фигурные скобки даже вокруг однострочных условных или петлевых операторов. Исключение - использование `if/else` как однострочный тернарный оператор.
+* Фигурные скобки следует опускать в тех случаях, 
+когда управляющая конструкция представляет собой чисто функциональную операцию,
+а все ветви управляющей конструкции (относящиеся к if/else) являются однострочными выражениями.
+Помните следующие рекомендации:
+  * ```if``` — Опускайте фигурные скобки, если у вас есть предложение else.
+  В противном случае заключите содержимое в фигурные скобки, даже если оно состоит только из одной строки.  
+  * ```for``` — Опускайте фигурные скобки, если у вас есть предложение yield.
+  В противном случае окружите содержимое фигурными скобками, даже если оно состоит только из одной строки.
+  * ```case``` — Всегда опускайте фигурные скобки в предложениях case.
 
-  ```scala
-  // хорошо
-  if (smth) {
-    println("Smth!")
-  }
+    ```scala
+    // хорошо
+    if (smth) {
+      println("Smth!")
+    }
+     
+    // плохо
+    if (smth) 
+      println("Smth!")
   
-  // хорошо
-  if (smth) first else second
+    // хорошо
+    if (smth) first else second
   
-  // хорошо
-  try {
-    smth()
-  } catch {
-    ...
-  }
+    // хорошо
+    if (smth) first 
+    else second
   
-  // плохо
-  if (smth) 
-    println("Smth!")
+    //плохо 
+    if (smth) first
+    else {
+      ...
+    }
     
-  // плохо
-  try smth() catch {
-    ...
-  }
+    //хорошо 
+    if (smth) {
+      ...
+    } else {
+      ...
+    }
+    
+    //хорошо
+    for {
+      x <- board.rows
+      y <- board.files
+    } yield (x, y)
+  
+    // хорошо
+    try {
+      smth()
+    } catch {
+      ...
+    }
+ 
+    //хорошо
+    news match {
+      case "good" => println("Good news!")
+      case "bad" => println("Bad news!")
+    }
   ```
-* Допустимо не ставить фигурные скобки, если тело метода целиком находится на той же строке.
+* Не нужно ставить фигурные скобки, если тело метода целиком находится на той же строке.
 
   ```scala
   def f: Int = calcSomeNumber
   ```
-  
-  Но:
+ 
+  Или всё тело содержит не более трех вертикальных отступов
+
+  ```scala
+  def f: Int =
+    calcSomeNumber
+      .map(...)
+      .head 
+
+  ```
+
+  Но допустимо, если отступов больше:
   ```scala
   def f: Int = {
     calcSomeNumber
-  }
-  ```
-* Другое исключение - когда единственный вызов метода обрамляет всю остальную часть кода.
-
-  ```scala
-  def writes(advertisingFeatureO: Option[String]): Writes[SeanceProperty] = o => Json.obj(
-    "advertising_feature" -> advertisingFeatureO,
-    "is_auto_cancel_disabled" -> o.isAutoCancelDisabled
-  )
-  ```
-  ```scala
-  def insert(value: T): Future[WriteResult] = collection.flatMap {
-    _.insert(ordered = false).one(value)
-  }
+      .filter(...)
+      .map(...)
+      .head
+}
   ```
 
 ### <a name='literals'>Литералы</a>
@@ -646,7 +681,7 @@
 * Если при вызове функции существует несколько case, то поместите каждый case на новую строку.
   
    ```scala
-	list.map { 
+	 list.map { 
 	  case a: User => ...
 	  case b: Hall => ...
 	}
@@ -1438,6 +1473,16 @@ object HelpersSpec {
 * Склеивайте несколько коммитов с одинаковым назначением в один. Удобнее всего это делать через `--fixup` и `--autosquash`, но можно и просто через `rebase`.
 
 ## <a name='miscellaneous'>Разное</a>
+
+### <a name='set_up_code_style_in_a_project'>Настройка кодстайла в проекте</a>
+Рекомендуется использовать форматеры, для автоматического применения кодстайла ко всему проекту,
+например [scalafmt](https://scalameta.org/scalafmt/),
+конфигурацию которого можно найти в этом же репозитории и которая задает кодстайл принятый в компании (файл .scalafmt.conf). 
+
+Для поддержания кода в чистоте так же рекомендуется использовать [scalafix](https://scalacenter.github.io/scalafix/docs/users/installation.html), 
+в частности помогает с организацией импортов в нужном порядке, 
+рекомендуемую конфигурацию, так же можно найти в этом репозитории (файл .scalafix.conf)
+
 
 ### <a name='architecture'>Архитектура</a>
 
